@@ -17,12 +17,15 @@ $gatewaySubnetName      = $envPrefix + "GatewaySubnet"              # Subnet for
 $gatewayIPConfigName    = $envPrefix + "GatewayIPConfig"            # Configuration name for Application Gateway IP Config
 $gatewayName            = $envPrefix + "AppGateway"                 # Name for Application Gateway
 $gatewayPool            = "PrimaryPool"                             # Name for Application Gateway Pool
+$gatewaySku             = "Standard_Small"                          # Gateway Size
+$gatewayCapacity        = 1                                         # Gateway Capacity
 $ipAllocationType       = "Dynamic"                                 # Static or Dynamic IP Allocation
 $location               = "East US"                                 # Location for all resources
 $vmsize                 = "Standard_A1"                             # Run Get-AzureRmVMSize -Location <Location> for sizes
 $vmsInSet               = 2                                         # Number of VMs to create and assign to Application Gateway
 $vnetBlock              = "10.0.0.0/16"                             # Virutal Network address block
 $defaultSubnetBlock     = "10.0.0.0/24"                             # Default subnet block
+$gatewaySubnetBlock     = "10.0.1.0/24"                             # Subnet block for Application Gateway
 
 # CACHE
 $poolIps = @() # Array of LB pool IPs
@@ -115,7 +118,7 @@ For ($i = 0; $i -lt $vmsInSet; $i++) {
 write-host "Creating Application Gateway: " + $gatewayName
  
 # Create subnet for Gateway
-$vnet = Add-AzureRmVirtualNetworkSubnetConfig -AddressPrefix 10.0.1.0/24 -Name $gatewaySubnetName -VirtualNetwork $vnet
+$vnet = Add-AzureRmVirtualNetworkSubnetConfig -AddressPrefix $gatewaySubnetBlock -Name $gatewaySubnetName -VirtualNetwork $vnet
  
 # Apply subnet config to vnet:
 $vnet = Set-AzureRmVirtualNetwork -VirtualNetwork $vnet
@@ -145,9 +148,9 @@ $listener = New-AzureRmApplicationGatewayHttpListener -Name ($gatewayName + "Lis
  
 # Gatway rule
 $rule = New-AzureRmApplicationGatewayRequestRoutingRule -Name rule01 -RuleType Basic -BackendHttpSettings $poolSetting -HttpListener $listener -BackendAddressPool $pool
- 
+
 # Define the sku
-$sku = New-AzureRmApplicationGatewaySku -Name Standard_Small -Tier Standard -Capacity 1
+$sku = New-AzureRmApplicationGatewaySku -Name $gatewaySku -Tier Standard -Capacity $gatewayCapacity
  
 # Create the actual application gateway
 $appgw = New-AzureRmApplicationGateway -Name $gatewayName -ResourceGroupName $resgroup -Location $location -BackendAddressPools $pool -BackendHttpSettingsCollection $poolSetting -FrontendIpConfigurations $fipconfig  -GatewayIpConfigurations $gipconfig -FrontendPorts $fp -HttpListeners $listener -RequestRoutingRules $rule -Sku $sku
